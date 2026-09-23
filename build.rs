@@ -60,7 +60,7 @@ enum Commands {
     Generate,
     #[command(about = "Smart contract completion assistant")]
     Complete,
-    #[command(about = "External plugins", hide = true, external_subcommand)]
+    #[command(external_subcommand)]
     External(Vec<String>),
     #[command(about = "Debug Soroban contracts with breakpoints, stepping, and inspection")]
     Debug,
@@ -385,6 +385,10 @@ const MAJOR_SUBCOMMANDS: &[(&str, &[(&str, &str)])] = &[
                 "remediation list",
                 "Review tracked audit and pentest remediation items",
             ),
+            (
+                "best-practices analyze [PATH]",
+                "Score contracts against the best-practices library (--track, --fail-on)",
+            ),
         ],
     ),
     (
@@ -456,6 +460,20 @@ const MAJOR_SUBCOMMANDS: &[(&str, &[(&str, &str)])] = &[
             "resources",
             "Price a simulation and check against budgets (--enforce)",
         )],
+    ),
+    (
+        "perf",
+        &[
+            (
+                "regression baseline",
+                "Record a named performance baseline (--input, --run)",
+            ),
+            (
+                "regression check",
+                "Fail on regressions vs a baseline (--fail-pct, --format markdown)",
+            ),
+            ("regression history", "Show how baseline metrics evolved"),
+        ],
     ),
     (
         "advanced-perf",
@@ -670,7 +688,7 @@ fn render_cheatsheet(cmd: &clap::Command) -> String {
             escape_md(&about)
         ));
     }
-    out.push_str("\n");
+    out.push('\n');
 
     // Major subcommand groups (excludes any that were removed/renamed).
     for (parent, children) in MAJOR_SUBCOMMANDS {
@@ -682,7 +700,7 @@ fn render_cheatsheet(cmd: &clap::Command) -> String {
         for (name, desc) in *children {
             out.push_str(&format!("| `{}` | {} |\n", name, escape_md(desc)));
         }
-        out.push_str("\n");
+        out.push('\n');
     }
 
     out
