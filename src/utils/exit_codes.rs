@@ -25,6 +25,10 @@ pub enum ExitCode {
     Execution = 6,
     /// System or dependency error (7) — e.g. missing Docker/curl, permission denied, unsupported OS/arch.
     Environment = 7,
+    /// Breaking contract interface change detected (8) — issued by the interface
+    /// diff tool when the new WASM removes or changes public ABI surface without
+    /// an explicit acknowledgment (`--acknowledge`).
+    BreakingChange = 8,
 }
 
 impl ExitCode {
@@ -44,6 +48,7 @@ impl ExitCode {
             Self::Signing => "SIGNING_ERROR",
             Self::Execution => "EXECUTION_ERROR",
             Self::Environment => "ENVIRONMENT_ERROR",
+            Self::BreakingChange => "BREAKING_INTERFACE_CHANGE",
         }
     }
 
@@ -59,6 +64,9 @@ impl ExitCode {
             Self::Execution => "Contract WASM compilation, verification, or transaction revert",
             Self::Environment => {
                 "Missing system dependency, permission denied, or unsupported host OS/arch"
+            }
+            Self::BreakingChange => {
+                "Contract interface diff found a breaking change in the new WASM"
             }
         }
     }
@@ -85,6 +93,12 @@ pub fn determine_exit_code(err: &anyhow::Error) -> ExitCode {
         .map(|c| c.to_string().to_lowercase())
         .collect::<Vec<_>>()
         .join(" ");
+
+    // 0. Breaking interface change (Code 8) — checked before Execution so the
+    //    interface-diff failure is never misclassified as a generic wasm error.
+    if msg.contains("breaking interface change") {
+        return ExitCode::BreakingChange;
+    }
 
     // 1. Usage / Input Validation (Code 2)
     if msg.contains("invalid correlation id")

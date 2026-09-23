@@ -365,6 +365,7 @@ External tools are optional. StarForge runs built-in Soroban heuristics every ti
 |------------|---------|
 | `upgrade prepare` | Validate upgrade WASM (`--contract-id`, `--wasm`) |
 | `upgrade auto compat` | Compare old/new WASM ABI and storage layout (`--old-wasm`, `--new-wasm`) |
+| `upgrade auto diff` | Diff two contract interfaces and classify breaking vs non-breaking (`--old-wasm`, `--new-wasm`, `--format json\|markdown`, `--acknowledge`) |
 | `upgrade auto plan` | Generate compatibility-aware upgrade plan and migration template |
 | `upgrade propose` | Create governance proposal |
 | `upgrade list` / `status` | List pending proposals |
@@ -372,6 +373,33 @@ External tools are optional. StarForge runs built-in Soroban heuristics every ti
 | `upgrade execute` | Execute approved upgrade |
 | `upgrade rollback` | Roll back contract version |
 | `upgrade history` | Show upgrade history |
+
+### Contract interface diff (`upgrade auto diff`)
+
+`starforge upgrade auto diff --old-wasm <old.wasm> --new-wasm <new.wasm>` diffs the *public
+contract interface* (exported ABI functions, public types, and auth surface) between two
+WASM builds and classifies every change as **breaking** or **non-breaking**.
+
+- Output formats: `--format json` (default, machine-readable for CI/governance tooling) or
+  `--format markdown` (rendered as a governance-grade report).
+- `--out <path>` writes the report to a file in addition to stdout, suitable for attaching
+  to an upgrade proposal.
+- A **breaking** verdict (removed/changed ABI functions, removed/changed public types, or
+  auth-surface removal) causes the command to exit with **exit code 8** unless
+  `--acknowledge` is passed, which forces exit code 0.
+
+Exit codes for the interface diff tool:
+
+| Code | Name | Meaning |
+|------|------|---------|
+| 0 | SUCCESS | Diff produced; no breaking changes (or `--acknowledge` used) |
+| 2 | USAGE_ERROR | Bad input arguments (e.g. missing `--old-wasm`/`--new-wasm`) |
+| 8 | BREAKING_INTERFACE_CHANGE | Breaking interface change detected and not acknowledged |
+| Others | — | Standard classification (see `src/utils/exit_codes.rs`) |
+
+The tool integrates with the upgrade proposal generator: `upgrade auto plan` reuses the same
+compatibility engine, and the markdown report produced here can be attached to
+`upgrade propose` / `governance propose` as the compatibility justification.
 
 ---
 
@@ -419,6 +447,37 @@ See [GOVERNANCE.md](GOVERNANCE.md) for the full workflow.
 | `lint <PATH>` | Static Soroban source lint |
 | `plugin install/list/run` | Dynamic plugin management |
 | `completions <SHELL>` | bash/zsh/fish/powershell completions |
+| `privacy mode on/off/status` | Enable, disable, or report strict end-to-end privacy mode |
+| `config set privacy.mode true/false` | Persist privacy mode in the configuration (`config set` equivalent) |
+
+### Strict privacy mode (`privacy mode`)
+
+*End-to-end privacy mode* guarantees that **no bytes leave the machine** for
+automatic network activity. It is the single kill-switch for outbound data.
+
+| Channel | Behavior when enabled |
+|---------|----------------------|
+| Telemetry (`telemetry.enabled`) | Force-disabled; no events are even written to disk |
+| AI cloud calls | Forced to offline mode; cloud-only AI commands fail clearly |
+| Marketplace / template registry auto-update | Uses the local cache or bundled registry; never fetches remotely |
+
+```bash
+starforge privacy mode on        # enable
+starforge privacy mode off       # disable
+starforge privacy mode status    # report effective status
+```
+
+Alternative ways to enable it:
+
+- `config set privacy.mode true` (persisted per-user).
+- `STARFORGE_PRIVACY_MODE=1` environment variable — overrides the config and is
+  ideal for CI runners and shared machines. Recognised values: `1/true/on/yes`,
+  `0/false/off/no`; unknown values fail closed (privacy on).
+
+Note that `privacy mode off` only flips the persisted config; a still-exported
+`STARFORGE_PRIVACY_MODE` environment variable keeps privacy enabled (env wins).
+
+---
 
 ### `monitor`
 
@@ -478,4 +537,6 @@ starforge my-plugin <args>
 - [SIMULATION_RESOURCES.md](SIMULATION_RESOURCES.md) — CPU, memory, footprint, and resource fees
 - [CORRELATION_IDS.md](CORRELATION_IDS.md) — correlating structured logs across an invocation
 - [CONFIGURATION.md](CONFIGURATION.md) — config parsing, overlays, and validation rules
+- [OFFLINE_AI.md](OFFLINE_AI.md) — offline/cloud AI modes and parity
+- [DEPLOYMENT_SCALING.md](DEPLOYMENT_SCALING.md) — parallel/batch deployment orchestration
 - [WALLET_IMPORT_SECURITY.md](WALLET_IMPORT_SECURITY.md) — limits on untrusted wallet backups

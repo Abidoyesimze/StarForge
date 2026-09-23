@@ -687,6 +687,13 @@ fn registry_path() -> Result<PathBuf> {
     Ok(dir.join("registry.json"))
 }
 
+/// Path to the sidecar file that stores the `ETag` of the last successfully
+/// fetched remote registry, used to make conditional (`If-None-Match`)
+/// requests on subsequent refreshes.
+fn registry_etag_path() -> Result<PathBuf> {
+    Ok(registry_path()?.with_extension("etag"))
+}
+
 /// Create a cache directory with owner-only permissions and reject symlinked
 /// directories. Cache contents influence generated projects and must not be
 /// redirected into an attacker-controlled location.
@@ -1095,10 +1102,20 @@ pub async fn load_registry() -> Result<TemplateRegistry> {
         .ok()
         .filter(|s| !s.trim().is_empty())
         .unwrap_or_else(|| DEFAULT_REGISTRY_URL.to_string());
+    let cache_path = registry_path()?;
+
+    // Strict privacy mode never contacts the registry network. The local cache
+    // is used when present; otherwise the registry bundled with the binary is
+    // returned so the marketplace still works fully offline.
+    if crate::utils::privacy::is_privacy_mode_enabled() {
+        if let Some(registry) = read_cached_registry(&cache_path) {
+            return Ok(registry);
+        }
+        return parse_registry_checked(DEFAULT_REGISTRY, "bundled default registry");
+    }
 
     // Check if user forced a refresh
     let force_refresh = std::env::var("STARFORGE_TEMPLATE_REGISTRY_FORCE_REFRESH").is_ok();
-    let cache_path = registry_path()?;
 
     // Use cache if it exists and is fresh and we are not forcing a refresh.
     if !force_refresh && is_cache_fresh(&cache_path) {
@@ -2502,9 +2519,6 @@ mod tests {
             documentation: None,
             categories: Vec::new(),
             featured: false,
-            changelog: None,
-            repository: None,
-            security_review: None,
         }
     }
 
@@ -2998,9 +3012,6 @@ mod tests {
             documentation: None,
             categories: Vec::new(),
             featured: false,
-            changelog: None,
-            repository: None,
-            security_review: None,
         });
 
         // Test name search
@@ -3055,9 +3066,6 @@ mod tests {
             documentation: None,
             categories: Vec::new(),
             featured: false,
-            changelog: None,
-            repository: None,
-            security_review: None,
         };
 
         let dest = tmp.path().join(&entry.name);
@@ -3114,9 +3122,6 @@ mod tests {
             documentation: None,
             categories: Vec::new(),
             featured: false,
-            changelog: None,
-            repository: None,
-            security_review: None,
         }
     }
 

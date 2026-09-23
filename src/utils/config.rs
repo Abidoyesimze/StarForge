@@ -465,6 +465,11 @@ pub struct Config {
     pub version: String,
     pub network: String,
     pub telemetry_enabled: Option<bool>,
+    /// Strict end-to-end privacy mode: blocks telemetry export, AI cloud calls,
+    /// and marketplace/registry auto-update network traffic regardless of the
+    /// individual feature flags (see `crate::utils::privacy`).
+    #[serde(default)]
+    pub privacy_mode: Option<bool>,
     /// Optional per-install UUIDv4. Lazily created on first load.
     /// Stable identifier used for deterministic feature-flag bucketing.
     #[serde(default)]
@@ -808,6 +813,7 @@ impl Default for Config {
             networks,
             plugin_trust: PluginTrustConfig::default(),
             telemetry_enabled: Some(false),
+            privacy_mode: None,
             wallet_encryption: None,
             install_id: None,
             feature_flags: FeatureFlagsConfig::default(),
@@ -1748,6 +1754,7 @@ telemetry_enabled = true
             created_at: String::new(),
             funded: false,
             rotation_history: Vec::new(),
+            kdf_options: None,
         });
         let findings = validate_config_integrity(&cfg);
         assert!(

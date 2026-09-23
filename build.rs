@@ -8,7 +8,8 @@ use std::path::Path;
 #[command(
     name = "starforge",
     version = "0.1.0",
-    about = "⚡ Stellar & Soroban developer productivity CLI"
+    about = "⚡ Stellar & Soroban developer productivity CLI",
+    disable_help_subcommand = true
 )]
 struct Cli {
     #[command(subcommand)]
@@ -59,7 +60,7 @@ enum Commands {
     Generate,
     #[command(about = "Smart contract completion assistant")]
     Complete,
-    #[command(about = "External plugins", hide = true)]
+    #[command(about = "External plugins", hide = true, external_subcommand)]
     External(Vec<String>),
     #[command(about = "Debug Soroban contracts with breakpoints, stepping, and inspection")]
     Debug,
