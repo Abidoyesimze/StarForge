@@ -12,11 +12,6 @@ use starforge::utils::test_optimizer::*;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/// Insert a `(name, history)` pair produced by [`make_history`].
-fn insert_history(map: &mut HashMap<String, TestHistory>, entry: (String, TestHistory)) {
-    map.insert(entry.0, entry.1);
-}
-
 fn make_optimizer() -> TestOptimizer {
     TestOptimizer::with_empty_config_dir(PathBuf::from("/tmp/test_opt_integration"))
 }

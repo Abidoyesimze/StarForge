@@ -32,6 +32,7 @@ template) is added.
 - **Redaction/masking**: `src/utils/redaction.rs` (logs, CLI error streams) and `src/utils/privacy.rs` (`sanitize_payload`, `anonymize_text`, `minimize_payload` for telemetry-shaped payloads).
 - **File permissions**: `0o600` applied to deployment checkpoint files (`src/utils/deployment_checkpoint.rs`); not currently applied uniformly to the config database or wallet export files (see Gap 1 context and follow-ups below).
 - **Opt-in/opt-out toggles**: telemetry is opt-out (`config set telemetry false`, `STARFORGE_TELEMETRY=0`); Shamir recovery shares and remote telemetry (future) are opt-in.
+- **Kill-switch**: strict privacy mode (`privacy mode on`, `config set privacy.mode true`, or `STARFORGE_PRIVACY_MODE=1`) force-disables telemetry export, AI cloud calls, and marketplace/registry auto-update network traffic — see [PRIVACY_MODE.md](PRIVACY_MODE.md) and `src/utils/privacy.rs`.
 - **Integrity checks**: HMAC-SHA256 tag on v2 wallet backups; SHA-256 `secret_hash` on Shamir shares.
 - **Input validation as a security boundary**: `wallet_import.rs` treats externally-sourced files as untrusted, enforcing size limits and format checks before parsing.
 

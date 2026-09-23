@@ -154,9 +154,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Test release artifact validation
         run: python -m unittest tests/release_artifacts_test.py
+
+      - name: Test release notes generator
+        run: python -m unittest tests/release_notes_test.py
+
+      - name: Generate release notes
+        run: |
+          python scripts/release_notes.py \
+            --repo "$GITHUB_WORKSPACE" \
+            --version "${GITHUB_REF#refs/tags/v}" \
+            --out BODY.md
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -170,6 +182,7 @@ jobs:
       - name: Publish GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          body_path: BODY.md
           files: |
             release-files/*
 

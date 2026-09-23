@@ -1128,12 +1128,21 @@ git push origin v0.2.0
 # 3. Build release binaries
 cargo build --release
 
-# 4. Create GitHub release
+# 4. Generate release notes from git history
+python scripts/release_notes.py --version X.Y.Z --out BODY.md
+
+# 5. Create GitHub release
 # - Go to GitHub releases
 # - Create new release from tag
 # - Upload binaries
-# - Add release notes
+# - Paste the generated BODY.md as the release notes
 ```
+
+The `release.yml` workflow generates the release notes automatically on every
+`v*` tag push using [`scripts/release_notes.py`](scripts/release_notes.py).
+Commit messages should follow the [conventional-commit style](#commit-message-guidelines);
+a `!` marker (e.g. `feat!: ...`) moves the change into the "Breaking Changes"
+section, and `Closes #N` references are rendered as links in the notes.
 
 ### Release Checklist
 

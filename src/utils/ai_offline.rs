@@ -78,7 +78,14 @@ pub const AI_MODE_ENV: &str = "STARFORGE_AI_MODE";
 /// Read the configured AI mode, honouring `$STARFORGE_AI_MODE` first.
 ///
 /// Falls back to [`AiMode::Auto`] when the variable is unset or invalid.
+///
+/// Strict privacy mode forces the result to [`AiMode::Offline`] so that cloud
+/// providers are never contacted, even when the user (or another config flag)
+/// asked for online/hybrid AI.
 pub fn configured_mode() -> AiMode {
+    if super::privacy::is_privacy_mode_enabled() {
+        return AiMode::Offline;
+    }
     match std::env::var(AI_MODE_ENV) {
         Ok(raw) => parse_ai_mode(&raw).unwrap_or_default(),
         Err(_) => AiMode::Auto,

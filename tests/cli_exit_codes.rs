@@ -19,6 +19,7 @@ fn test_exit_code_numeric_values() {
     assert_eq!(ExitCode::Signing.code(), 5);
     assert_eq!(ExitCode::Execution.code(), 6);
     assert_eq!(ExitCode::Environment.code(), 7);
+    assert_eq!(ExitCode::BreakingChange.code(), 8);
 }
 
 #[test]
@@ -30,6 +31,7 @@ fn test_exit_code_names_and_descriptions() {
     assert_eq!(ExitCode::Signing.name(), "SIGNING_ERROR");
     assert_eq!(ExitCode::Execution.name(), "EXECUTION_ERROR");
     assert_eq!(ExitCode::Environment.name(), "ENVIRONMENT_ERROR");
+    assert_eq!(ExitCode::BreakingChange.name(), "BREAKING_INTERFACE_CHANGE");
 
     assert!(!ExitCode::Usage.description().is_empty());
     assert!(!ExitCode::Config.description().is_empty());
@@ -37,6 +39,7 @@ fn test_exit_code_names_and_descriptions() {
     assert!(!ExitCode::Signing.description().is_empty());
     assert!(!ExitCode::Execution.description().is_empty());
     assert!(!ExitCode::Environment.description().is_empty());
+    assert!(!ExitCode::BreakingChange.description().is_empty());
 }
 
 // ── 2. Error classification tests (determine_exit_code) ───────────────────────
@@ -120,6 +123,15 @@ fn test_classify_environment_errors() {
 fn test_classify_general_failure_fallback() {
     let err = anyhow!("An unexpected internal computation state occurred");
     assert_eq!(determine_exit_code(&err), ExitCode::GeneralFailure);
+}
+
+#[test]
+fn test_classify_breaking_interface_change() {
+    let err = anyhow!(
+        "Breaking interface change detected: old wasm exposes a public interface \
+         that the new wasm no longer guarantees."
+    );
+    assert_eq!(determine_exit_code(&err), ExitCode::BreakingChange);
 }
 
 // ── 3. Chained error context classification ───────────────────────────────────
