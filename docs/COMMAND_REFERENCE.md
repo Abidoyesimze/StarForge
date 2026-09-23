@@ -538,4 +538,5 @@ starforge my-plugin <args>
 - [CORRELATION_IDS.md](CORRELATION_IDS.md) — correlating structured logs across an invocation
 - [CONFIGURATION.md](CONFIGURATION.md) — config parsing, overlays, and validation rules
 - [OFFLINE_AI.md](OFFLINE_AI.md) — offline/cloud AI modes and parity
+- [DEPLOYMENT_SCALING.md](DEPLOYMENT_SCALING.md) — parallel/batch deployment orchestration
 - [WALLET_IMPORT_SECURITY.md](WALLET_IMPORT_SECURITY.md) — limits on untrusted wallet backups
