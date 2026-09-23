@@ -100,7 +100,15 @@ starforge multisig notify proposal.json --message "Please sign the treasury paym
 | `inspect storage` | Deep storage inspection |
 | `deploy --wasm <FILE>` | Prepare Soroban deployment |
 
-**`deploy` flags:** `--network`, `--wallet`, `--optimize`, `--simulate`, `--yes`, `--execute`
+**`deploy` flags:** `--network`, `--wallet`, `--optimize`, `--simulate`, `--yes`, `--execute`, `--policy`, `--checklist`
+
+Deploy policy files (`starforge-deploy-policy.toml`) gate allowed networks,
+required reviewers, and checklist items. Validate in CI with
+`starforge deploy-policy check`. See [DEPLOY_POLICY.md](DEPLOY_POLICY.md).
+
+Destructive confirmations (mainnet deploy, secret reveal) require typed
+challenge phrases; automation bypass needs `STARFORGE_UNSAFE_SKIP_CONFIRMATION=1`.
+See [CONFIRMATION_UX.md](CONFIRMATION_UX.md).
 
 `--simulate` and `--dry-run` print the simulated CPU, memory, and ledger
 footprint alongside the minimum resource fee and a recommended fee that
@@ -114,6 +122,15 @@ starforge deploy --wasm ./token.wasm --optimize --yes --execute
 
 starforge contract generate-bindings ./token.wasm --lang rust
 ```
+
+## `deploy-policy`
+
+| Subcommand | Purpose |
+|------------|---------|
+| `init [FILE]` | Write a documented default policy (TOML or YAML) |
+| `check --config <FILE>` | Validate policy schema and simulate deploy context (CI-friendly) |
+
+See [DEPLOY_POLICY.md](DEPLOY_POLICY.md).
 
 ### Invocation scripts
 
@@ -248,6 +265,7 @@ When downloading template archives from a remote registry, the CLI automatically
 | `simulate resources --file <JSON>` | Report CPU, memory, footprint, and minimum resource fee from a saved `simulateTransaction` response |
 | `simulate resources --contract <ID> --function <NAME>` | The same, simulated live against Soroban RPC |
 | `cost resources --file <JSON>` | Price a simulation and check it against configured budgets (`--enforce` to gate CI) |
+| `cost forecast-batch <MANIFEST>` | Forecast aggregate fees for a batch of planned invokes before submission (per-item estimates + totals, high-variance calls highlighted) |
 
 Shared flags: `--margin <PERCENT>` (default `20`), `--inclusion-fee <STROOPS>`
 (default `100`). `simulate resources` also takes `--json`.
@@ -256,9 +274,11 @@ Shared flags: `--margin <PERCENT>` (default `20`), `--inclusion-fee <STROOPS>`
 starforge simulate resources --file simulation.json --json
 starforge simulate resources --contract CCPYZ... --function balance --network testnet
 starforge cost resources --file simulation.json --network mainnet --enforce
+starforge cost forecast-batch batch-invoke-manifest.json --network testnet --enforce
 ```
 
-Full reference: [SIMULATION_RESOURCES.md](SIMULATION_RESOURCES.md).
+Full reference: [SIMULATION_RESOURCES.md](SIMULATION_RESOURCES.md) and
+[BATCH_FORECAST.md](BATCH_FORECAST.md).
 
 ---
 
@@ -285,6 +305,19 @@ starforge advanced-perf profile ./target/wasm32-unknown-unknown/release/token.wa
 
 The artifact profiler reports estimated execution time, memory usage, bottlenecks,
 baseline regression detection, comparison deltas, and a dashboard summary.
+
+### `perf regression` — regression testing against tracked baselines
+
+| Subcommand | Purpose |
+|------------|---------|
+| `perf regression baseline --name <NAME> --input <JSON>` | Record or update a baseline; each version is appended to `<name>.history.jsonl` |
+| `perf regression baseline --run "<CMD>" --label <L>` | Time a command (`--iterations`, `--warmup`) and record `<L>.wall_time_ms` |
+| `perf regression check --baseline <NAME> --input <JSON>` | Compare measurements with a baseline; exits non-zero on regressions |
+| `perf regression history --name <NAME>` | Show how each metric's mean evolved across baseline versions |
+| `perf regression list` | List stored baselines |
+
+See [PERF_REGRESSION_TESTING.md](PERF_REGRESSION_TESTING.md) for the measurement
+format, thresholds, noise handling, and CI integration.
 
 ---
 
@@ -327,6 +360,12 @@ Set `STARFORGE_AI_API_KEY` (optional `STARFORGE_AI_BASE_URL`, `STARFORGE_AI_MODE
 | `audit --ci-workflow-out <FILE>` | Generate a GitHub Actions workflow for security audits |
 | `audit --track` | Create remediation tracker items for findings |
 | `remediation list` | Review tracked audit and pentest remediation items |
+| `best-practices analyze [PATH]` | Score a contract or project against the best-practices library (`--format text\|markdown\|json\|sarif`, `--fail-on`, `--min-score`, `--track`) |
+| `best-practices rules` | List rules with severities and OWASP/CWE references |
+| `best-practices status` | Show tracked findings, remediation status, and score trend |
+| `best-practices accept <ID> --reason <TEXT>` / `reopen <ID>` | Record accepted risk or reopen a finding |
+
+See [security/BEST_PRACTICES_ANALYZER.md](security/BEST_PRACTICES_ANALYZER.md).
 
 ```bash
 starforge security audit ./contracts/token/src/lib.rs --format html --out audit.html
@@ -345,6 +384,7 @@ External tools are optional. StarForge runs built-in Soroban heuristics every ti
 |------------|---------|
 | `upgrade prepare` | Validate upgrade WASM (`--contract-id`, `--wasm`) |
 | `upgrade auto compat` | Compare old/new WASM ABI and storage layout (`--old-wasm`, `--new-wasm`) |
+| `upgrade auto diff` | Diff two contract interfaces and classify breaking vs non-breaking (`--old-wasm`, `--new-wasm`, `--format json\|markdown`, `--acknowledge`) |
 | `upgrade auto plan` | Generate compatibility-aware upgrade plan and migration template |
 | `upgrade propose` | Create governance proposal |
 | `upgrade list` / `status` | List pending proposals |
@@ -352,6 +392,33 @@ External tools are optional. StarForge runs built-in Soroban heuristics every ti
 | `upgrade execute` | Execute approved upgrade |
 | `upgrade rollback` | Roll back contract version |
 | `upgrade history` | Show upgrade history |
+
+### Contract interface diff (`upgrade auto diff`)
+
+`starforge upgrade auto diff --old-wasm <old.wasm> --new-wasm <new.wasm>` diffs the *public
+contract interface* (exported ABI functions, public types, and auth surface) between two
+WASM builds and classifies every change as **breaking** or **non-breaking**.
+
+- Output formats: `--format json` (default, machine-readable for CI/governance tooling) or
+  `--format markdown` (rendered as a governance-grade report).
+- `--out <path>` writes the report to a file in addition to stdout, suitable for attaching
+  to an upgrade proposal.
+- A **breaking** verdict (removed/changed ABI functions, removed/changed public types, or
+  auth-surface removal) causes the command to exit with **exit code 8** unless
+  `--acknowledge` is passed, which forces exit code 0.
+
+Exit codes for the interface diff tool:
+
+| Code | Name | Meaning |
+|------|------|---------|
+| 0 | SUCCESS | Diff produced; no breaking changes (or `--acknowledge` used) |
+| 2 | USAGE_ERROR | Bad input arguments (e.g. missing `--old-wasm`/`--new-wasm`) |
+| 8 | BREAKING_INTERFACE_CHANGE | Breaking interface change detected and not acknowledged |
+| Others | — | Standard classification (see `src/utils/exit_codes.rs`) |
+
+The tool integrates with the upgrade proposal generator: `upgrade auto plan` reuses the same
+compatibility engine, and the markdown report produced here can be attached to
+`upgrade propose` / `governance propose` as the compatibility justification.
 
 ---
 
@@ -398,7 +465,38 @@ See [GOVERNANCE.md](GOVERNANCE.md) for the full workflow.
 | `test` | Soroban WASM test runner |
 | `lint <PATH>` | Static Soroban source lint |
 | `plugin install/list/run` | Dynamic plugin management |
-| `completions <SHELL>` | bash/zsh/fish completions |
+| `completions <SHELL>` | bash/zsh/fish/powershell completions |
+| `privacy mode on/off/status` | Enable, disable, or report strict end-to-end privacy mode |
+| `config set privacy.mode true/false` | Persist privacy mode in the configuration (`config set` equivalent) |
+
+### Strict privacy mode (`privacy mode`)
+
+*End-to-end privacy mode* guarantees that **no bytes leave the machine** for
+automatic network activity. It is the single kill-switch for outbound data.
+
+| Channel | Behavior when enabled |
+|---------|----------------------|
+| Telemetry (`telemetry.enabled`) | Force-disabled; no events are even written to disk |
+| AI cloud calls | Forced to offline mode; cloud-only AI commands fail clearly |
+| Marketplace / template registry auto-update | Uses the local cache or bundled registry; never fetches remotely |
+
+```bash
+starforge privacy mode on        # enable
+starforge privacy mode off       # disable
+starforge privacy mode status    # report effective status
+```
+
+Alternative ways to enable it:
+
+- `config set privacy.mode true` (persisted per-user).
+- `STARFORGE_PRIVACY_MODE=1` environment variable — overrides the config and is
+  ideal for CI runners and shared machines. Recognised values: `1/true/on/yes`,
+  `0/false/off/no`; unknown values fail closed (privacy on).
+
+Note that `privacy mode off` only flips the persisted config; a still-exported
+`STARFORGE_PRIVACY_MODE` environment variable keeps privacy enabled (env wins).
+
+---
 
 ### `monitor`
 
@@ -415,8 +513,11 @@ Live monitoring of contracts or wallets, including Soroban event streaming, rout
 | `--websocket-url <URL>` | Override the derived WebSocket endpoint |
 | `--route <NAME=PATTERN>` | Route matching events into named lanes; repeatable |
 | `--alert <RULE>` | Alert rule in `pattern`, `severity:pattern`, or `severity:pattern:message` form |
+| `--alert-rate <RULE>` | Rate alert `[severity:]pattern:COUNT/LEDGERS[:message]`: fires when COUNT matching events land within LEDGERS ledgers, then stays quiet for one window; repeatable |
+| `--notify <SEVERITY>` | Forward alerts at or above this severity to notification channels configured with `contract-monitor notify add` |
 | `--persist [PATH]` | Persist matching events to JSONL, using the default StarForge event store path when PATH is omitted |
 | `--replay <PATH>` | Replay events from a JSONL event store instead of connecting live |
+| `--from-ledger <N>` / `--to-ledger <N>` | Limit a replay to an inclusive ledger range |
 | `--dashboard` | Render the event analytics dashboard |
 | `--trigger <PATTERN=COMMAND>` | Execute a shell command when a pattern matches; repeatable |
 | `--allow-triggers` | Required explicit opt-in before event triggers execute shell commands |
@@ -433,7 +534,28 @@ starforge monitor --contract CCPYZ... --transport websocket --dashboard
 starforge monitor --contract CCPYZ... --route swaps=swap --alert high:mint --persist
 starforge monitor --contract CCPYZ... --replay ~/.starforge/events/testnet-CCPYZ....jsonl --dashboard
 starforge monitor --contract CCPYZ... --trigger mint=./on-mint.sh --allow-triggers
+starforge monitor --contract CCPYZ... --follow \
+  --alert "critical:topic~admin & !topic~init:admin action" \
+  --alert-rate "high:topic~transfer:20/5:transfer burst" --notify high
+starforge monitor --contract CCPYZ... --replay events.jsonl \
+  --from-ledger 51200 --to-ledger 51900 --alert-rate "transfer:20/5" --dashboard
 ```
+
+Event patterns (used by `--route`, `--alert`, `--alert-rate`, and `--trigger`) are
+case-insensitive:
+
+| Pattern | Matches |
+|---------|---------|
+| `text` | Substring anywhere in the event type, ledger, ID, topics, or value |
+| `topic~swap`, `type~contract`, `value~xlm`, `id~0000` | Substring in one field |
+| `ledger>=100`, `ledger<200`, `ledger=150` | Ledger comparisons |
+| `!term` | Negation |
+| `a & b` | All terms must match |
+| `a \| b` | Any alternative matches (`&` binds tighter than `\|`) |
+
+Replays are processed in ledger order, so rate alerts behave the same live and on
+replay. The dashboard reports totals, the event rate (events per ledger), top
+topics, and counts by type, route, and alert severity.
 
 Event stores use JSON Lines. Replay skips malformed records and deduplicates events by
 network, contract ID, and Soroban event ID. Triggers inherit event metadata through
@@ -458,4 +580,6 @@ starforge my-plugin <args>
 - [SIMULATION_RESOURCES.md](SIMULATION_RESOURCES.md) — CPU, memory, footprint, and resource fees
 - [CORRELATION_IDS.md](CORRELATION_IDS.md) — correlating structured logs across an invocation
 - [CONFIGURATION.md](CONFIGURATION.md) — config parsing, overlays, and validation rules
+- [OFFLINE_AI.md](OFFLINE_AI.md) — offline/cloud AI modes and parity
+- [DEPLOYMENT_SCALING.md](DEPLOYMENT_SCALING.md) — parallel/batch deployment orchestration
 - [WALLET_IMPORT_SECURITY.md](WALLET_IMPORT_SECURITY.md) — limits on untrusted wallet backups

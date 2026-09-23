@@ -1,5 +1,4 @@
 use starforge::utils::bindings::{self, BindingLanguage};
-use std::path::Path;
 use tempfile::NamedTempFile;
 
 // Create a minimal valid WASM with contract metadata section for testing
@@ -28,8 +27,7 @@ fn test_generate_rust_bindings() {
     let result = bindings::generate_bindings(temp_file.path(), BindingLanguage::Rust);
     // Note: This will fail because our test WASM doesn't have proper contract spec
     // But we're testing that the function handles it gracefully
-    if result.is_ok() {
-        let generated = result.unwrap();
+    if let Ok(generated) = result {
         assert!(
             generated.contains("pub struct ContractClient"),
             "Missing ContractClient struct"
@@ -49,8 +47,7 @@ fn test_generate_typescript_bindings() {
     std::fs::write(temp_file.path(), &test_wasm).unwrap();
 
     let result = bindings::generate_bindings(temp_file.path(), BindingLanguage::TypeScript);
-    if result.is_ok() {
-        let generated = result.unwrap();
+    if let Ok(generated) = result {
         assert!(
             generated.contains("export class ContractClient"),
             "Missing ContractClient class"
@@ -66,8 +63,7 @@ fn test_generate_python_bindings() {
     std::fs::write(temp_file.path(), &test_wasm).unwrap();
 
     let result = bindings::generate_bindings(temp_file.path(), BindingLanguage::Python);
-    if result.is_ok() {
-        let generated = result.unwrap();
+    if let Ok(generated) = result {
         assert!(
             generated.contains("class ContractClient"),
             "Missing ContractClient class"
@@ -86,8 +82,7 @@ fn test_generate_go_bindings() {
     std::fs::write(temp_file.path(), &test_wasm).unwrap();
 
     let result = bindings::generate_bindings(temp_file.path(), BindingLanguage::Go);
-    if result.is_ok() {
-        let generated = result.unwrap();
+    if let Ok(generated) = result {
         assert!(
             generated.contains("type ContractClient struct"),
             "Missing ContractClient struct"

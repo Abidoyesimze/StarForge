@@ -574,6 +574,11 @@ mod tests {
         for cmd in HELP_REGISTRY {
             for flag in cmd.flags {
                 assert!(
+                    !flag.flag.trim().is_empty(),
+                    "{} has an empty flag entry",
+                    cmd.name
+                );
+                assert!(
                     !flag.purpose.is_empty(),
                     "{}.{} has empty purpose",
                     cmd.name,
@@ -652,7 +657,7 @@ mod tests {
             .iter()
             .find(|c| c.name == "deploy")
             .expect("deploy");
-        assert!(cmd.examples.len() >= 1);
+        assert!(!cmd.examples.is_empty());
         assert!(cmd.workflows.contains(&"first-contract"));
     }
 }

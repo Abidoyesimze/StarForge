@@ -1159,7 +1159,7 @@ fn handle_history(args: HistoryArgs) -> Result<()> {
         .filter(|r| {
             args.contract_id
                 .as_deref()
-                .is_none_or(|id| r.contract_id == id)
+                .map_or(true, |id| r.contract_id == id)
         })
         .collect();
 
@@ -1506,10 +1506,7 @@ mod tests {
             forbidden_keys: vec![],
         };
         let report = apply_rules(&snap, &rules);
-        assert_eq!(
-            report.snapshot.entries.get("balance").unwrap().is_number(),
-            true
-        );
+        assert!(report.snapshot.entries.get("balance").unwrap().is_number());
         assert!(report.warnings.is_empty());
     }
 
