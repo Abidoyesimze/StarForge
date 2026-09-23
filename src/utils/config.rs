@@ -813,6 +813,7 @@ impl Default for Config {
             networks,
             plugin_trust: PluginTrustConfig::default(),
             telemetry_enabled: Some(false),
+            privacy_mode: None,
             wallet_encryption: None,
             install_id: None,
             feature_flags: FeatureFlagsConfig::default(),

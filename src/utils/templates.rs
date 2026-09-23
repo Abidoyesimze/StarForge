@@ -1102,6 +1102,7 @@ pub async fn load_registry() -> Result<TemplateRegistry> {
         .ok()
         .filter(|s| !s.trim().is_empty())
         .unwrap_or_else(|| DEFAULT_REGISTRY_URL.to_string());
+    let cache_path = registry_path()?;
 
     // Strict privacy mode never contacts the registry network. The local cache
     // is used when present; otherwise the registry bundled with the binary is
@@ -1115,7 +1116,6 @@ pub async fn load_registry() -> Result<TemplateRegistry> {
 
     // Check if user forced a refresh
     let force_refresh = std::env::var("STARFORGE_TEMPLATE_REGISTRY_FORCE_REFRESH").is_ok();
-    let cache_path = registry_path()?;
 
     // Use cache if it exists and is fresh and we are not forcing a refresh.
     if !force_refresh && is_cache_fresh(&cache_path) {

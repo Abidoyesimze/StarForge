@@ -257,7 +257,11 @@ pub fn compute_execution_levels(state: &DeploymentState) -> Result<Vec<Vec<usize
         let mut max_dep = 0usize;
         for dep in &step.depends_on {
             let dep_idx = by_id.get(dep.as_str()).ok_or_else(|| {
-                anyhow::anyhow!("Contract '{}' depends on unknown contract '{}'", step.contract_id, dep)
+                anyhow::anyhow!(
+                    "Contract '{}' depends on unknown contract '{}'",
+                    step.contract_id,
+                    dep
+                )
             })?;
             max_dep = max_dep.max(depth(*dep_idx, by_id, steps, memo, stack)?);
         }
@@ -436,38 +440,47 @@ pub fn execute_plan_parallel(
         let cursor = std::sync::atomic::AtomicUsize::new(0);
         let next_index = || cursor.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
-        let mut threads = Vec::new();
-        for _ in 0..workers {
-            let tasks = tasks.clone();
-            let dry_run = dry_run;
-            threads.push(std::thread::spawn(move || {
-                let mut results = Vec::new();
-                while let Some(task) = tasks.get(next_index()) {
-                    let address = simulate_deploy_address(&task.1, dry_run);
-                    results.push((task.0, address, None::<String>));
+        let thread_results: Vec<Vec<(usize, String, Option<String>)>> =
+            std::thread::scope(|scope| {
+                let mut handles = Vec::new();
+                for _ in 0..workers {
+                    let tasks = tasks.clone();
+                    handles.push(scope.spawn(move || {
+                        let mut results = Vec::new();
+                        while let Some(task) = tasks.get(next_index()) {
+                            let address = simulate_deploy_address(&task.1, dry_run);
+                            results.push((task.0, address, None::<String>));
+                        }
+                        results
+                    }));
                 }
-                results
-            }));
-        }
+                handles
+                    .into_iter()
+                    .map(|handle| {
+                        handle.join().map_err(|_| {
+                            anyhow::anyhow!(
+                                "Deployment worker thread panicked while planning wave {}",
+                                wave_idx + 1
+                            )
+                        })
+                    })
+                    .collect::<Result<Vec<_>>>()
+            })?;
 
-        for thread in threads {
-            for (idx, address, error) in thread.join().map_err(|_| {
-                anyhow::anyhow!("Deployment worker thread panicked while planning wave {}", wave_idx + 1)
-            })? {
-                if error.is_some() {
-                    state.steps[idx].status = DeployStepStatus::Failed;
-                    state.steps[idx].error = error;
-                } else {
-                    state.steps[idx].status = DeployStepStatus::Running;
-                    // Apply the (deterministic) simulated result back on the
-                    // orchestrator thread so state writes stay serialized.
-                    state.steps[idx].deployed_address = Some(address);
-                    state.steps[idx].status = DeployStepStatus::Deployed;
-                    deployed_count += 1;
-                }
-                state.updated_at = Utc::now().to_rfc3339();
-                save_state(state)?;
+        for (idx, address, error) in thread_results.into_iter().flatten() {
+            if error.is_some() {
+                state.steps[idx].status = DeployStepStatus::Failed;
+                state.steps[idx].error = error;
+            } else {
+                state.steps[idx].status = DeployStepStatus::Running;
+                // Apply the (deterministic) simulated result back on the
+                // orchestrator thread so state writes stay serialized.
+                state.steps[idx].deployed_address = Some(address);
+                state.steps[idx].status = DeployStepStatus::Deployed;
+                deployed_count += 1;
             }
+            state.updated_at = Utc::now().to_rfc3339();
+            save_state(state)?;
         }
     }
 
@@ -608,11 +621,7 @@ mod tests {
     #[test]
     fn execution_levels_orders_tasks_sorted_within_level() {
         // Two independent contracts listed last in the manifest still land in wave 0.
-        let s = state(vec![
-            step("z_dep", &["a"]),
-            step("a", &[]),
-            step("b", &[]),
-        ]);
+        let s = state(vec![step("z_dep", &["a"]), step("a", &[]), step("b", &[])]);
         let waves = compute_execution_levels(&s).unwrap();
         assert_eq!(waves[0], vec![1, 2]);
         assert_eq!(waves[1], vec![0]);

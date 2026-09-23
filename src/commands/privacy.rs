@@ -26,8 +26,18 @@ pub enum PrivacyCommands {
 fn print_privacy_status() -> Result<()> {
     let enabled = privacy::is_privacy_mode_enabled();
     let cfg = config::load()?;
-    p::kv("Privacy mode", &if enabled { "enabled (strict)" } else { "disabled" }.to_string());
-    p::kv("Config (privacy.mode)", &cfg.privacy_mode.unwrap_or(false).to_string());
+    p::kv(
+        "Privacy mode",
+        if enabled {
+            "enabled (strict)"
+        } else {
+            "disabled"
+        },
+    );
+    p::kv(
+        "Config (privacy.mode)",
+        &cfg.privacy_mode.unwrap_or(false).to_string(),
+    );
     let env_raw = std::env::var(privacy::PRIVACY_MODE_ENV).ok();
     p::kv(
         "Environment (STARFORGE_PRIVACY_MODE)",

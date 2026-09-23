@@ -378,7 +378,11 @@ impl BatchOptimizer {
         host_parallelism: usize,
     ) -> usize {
         let batch = Self::analyze_batch_optimization().batch_size.max(1);
-        let size_cap = if wasm_bytes.len() >= 512 * 1024 { 2 } else { usize::MAX };
+        let size_cap = if wasm_bytes.len() >= 512 * 1024 {
+            2
+        } else {
+            usize::MAX
+        };
         let candidate = batch.min(host_parallelism).min(size_cap);
         candidate.clamp(1, contract_count.max(1))
     }

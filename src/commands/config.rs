@@ -311,12 +311,11 @@ fn show() -> Result<()> {
     );
     p::kv(
         "Privacy mode",
-        &if crate::utils::privacy::is_privacy_mode_enabled() {
+        if crate::utils::privacy::is_privacy_mode_enabled() {
             "enabled (strict)"
         } else {
             "disabled"
-        }
-        .to_string(),
+        },
     );
     p::kv(
         "privacy.mode",

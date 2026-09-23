@@ -14,19 +14,5 @@ Print help
 .TP
 \fB\-V\fR, \fB\-\-version\fR
 Print version
-.SH EXECUTE OPTIONS
-.TP
-\fBstarforge orchestrate execute --file <manifest.json> [--dry-run]\fR
-Build the plan and execute it sequentially (default).
-.TP
-\fB\-\-concurrency <N>\fR
-Deploy independent contracts in parallel with up to <N> worker threads.
-Dependency order is preserved: contracts sharing a dependency depth form a
-wave, and waves run in strict order. Use \fBauto\fR to size the pool from the
-host's parallel CPU count (capped at 8).
-.SH PROPAGATION
-Parallel deployment issues contract uploads across independent deployment
-steps within each wave; checkpoint state is persisted after every step, so
-resume/rollback guarantees are identical to sequential execution.
 .SH VERSION
 v0.1.0
