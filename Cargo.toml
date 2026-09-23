@@ -76,6 +76,7 @@ urlencoding = "2.1"
 sha2 = "0.10"
 indicatif = "0.17.7"
 libloading = "0.8.1"
+wasmtime = { version = "27", default-features = false, features = ["cranelift", "runtime", "wat"] }
 uuid = { version = "1.6.1", features = ["v4", "serde"] }
 hidapi = { version = "2.6.5", optional = true }
 trezor-client = { version = "0.1.5", default-features = false, features = ["stellar"], optional = true }
@@ -102,6 +103,7 @@ futures = "0.3.33"
 
 [features]
 hardware-wallet = ["dep:hidapi", "dep:trezor-client"]
+unsafe-native-plugins = []
 memory-profiling = []
 
 [dev-dependencies]
