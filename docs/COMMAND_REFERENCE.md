@@ -365,6 +365,7 @@ External tools are optional. StarForge runs built-in Soroban heuristics every ti
 |------------|---------|
 | `upgrade prepare` | Validate upgrade WASM (`--contract-id`, `--wasm`) |
 | `upgrade auto compat` | Compare old/new WASM ABI and storage layout (`--old-wasm`, `--new-wasm`) |
+| `upgrade auto diff` | Diff two contract interfaces and classify breaking vs non-breaking (`--old-wasm`, `--new-wasm`, `--format json\|markdown`, `--acknowledge`) |
 | `upgrade auto plan` | Generate compatibility-aware upgrade plan and migration template |
 | `upgrade propose` | Create governance proposal |
 | `upgrade list` / `status` | List pending proposals |
@@ -372,6 +373,33 @@ External tools are optional. StarForge runs built-in Soroban heuristics every ti
 | `upgrade execute` | Execute approved upgrade |
 | `upgrade rollback` | Roll back contract version |
 | `upgrade history` | Show upgrade history |
+
+### Contract interface diff (`upgrade auto diff`)
+
+`starforge upgrade auto diff --old-wasm <old.wasm> --new-wasm <new.wasm>` diffs the *public
+contract interface* (exported ABI functions, public types, and auth surface) between two
+WASM builds and classifies every change as **breaking** or **non-breaking**.
+
+- Output formats: `--format json` (default, machine-readable for CI/governance tooling) or
+  `--format markdown` (rendered as a governance-grade report).
+- `--out <path>` writes the report to a file in addition to stdout, suitable for attaching
+  to an upgrade proposal.
+- A **breaking** verdict (removed/changed ABI functions, removed/changed public types, or
+  auth-surface removal) causes the command to exit with **exit code 8** unless
+  `--acknowledge` is passed, which forces exit code 0.
+
+Exit codes for the interface diff tool:
+
+| Code | Name | Meaning |
+|------|------|---------|
+| 0 | SUCCESS | Diff produced; no breaking changes (or `--acknowledge` used) |
+| 2 | USAGE_ERROR | Bad input arguments (e.g. missing `--old-wasm`/`--new-wasm`) |
+| 8 | BREAKING_INTERFACE_CHANGE | Breaking interface change detected and not acknowledged |
+| Others | — | Standard classification (see `src/utils/exit_codes.rs`) |
+
+The tool integrates with the upgrade proposal generator: `upgrade auto plan` reuses the same
+compatibility engine, and the markdown report produced here can be attached to
+`upgrade propose` / `governance propose` as the compatibility justification.
 
 ---
 
