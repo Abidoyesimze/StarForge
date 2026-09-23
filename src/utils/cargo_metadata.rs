@@ -50,7 +50,7 @@ impl fmt::Display for CargoMetadataError {
             Self::UndeterminedRepositoryUrl(path) => write!(
                 f,
                 "Repository URL could not be determined for: {}",
-                path.display()
+                path
             ),
             Self::LicenseFileNotFound(path) => {
                 write!(f, "License file not found at path: {}", path.display())
@@ -209,7 +209,7 @@ impl CargoMetadataFixer {
             }
 
             let mut modified = false;
-            let mut lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
+            let lines: Vec<String> = content.lines().map(|s| s.to_string()).collect();
             let mut in_package_section = false;
             let mut has_repository = false;
             let mut has_homepage = false;

@@ -351,8 +351,6 @@ fn list(json: bool) -> Result<()> {
                 trust: entry.trust.label().to_string(),
                 source: entry.source,
                 description: entry.description,
-                source: entry.source.clone(),
-                description: entry.description.clone(),
                 commands: entry
                     .commands
                     .into_iter()
@@ -380,15 +378,13 @@ fn list(json: bool) -> Result<()> {
     p::separator();
     let list_entries = registry::plugin_list_entries(&reg);
 
-    let list_entries = registry::plugin_list_entries(&reg);
-
     let plugin_rows: Vec<Vec<String>> = list_entries
         .iter()
         .map(|entry| {
             vec![
                 entry.name.clone(),
                 entry.plugin_version.clone(),
-                entry.trust.clone(),
+                entry.trust.label().to_string(),
                 entry.description.clone(),
             ]
         })
@@ -797,7 +793,7 @@ fn verify(name: Option<String>, deep: bool, runtime_check: bool) -> Result<()> {
         None => reg.plugins.iter().collect(),
     };
 
-    let _config = config::load().unwrap_or_default();
+    let config = config::load().unwrap_or_default();
     let mut all_ok = true;
 
     for pl in &to_check {

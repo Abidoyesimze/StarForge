@@ -357,6 +357,9 @@ mod tests {
             starforge_version_min: None,
             starforge_version_max: None,
             required_capabilities: vec![],
+            publisher: None,
+            publisher_key: None,
+            signature: None,
         };
 
         assert!(no_caps.enforce_filesystem_access(false).is_err());
@@ -371,6 +374,9 @@ mod tests {
             starforge_version_min: None,
             starforge_version_max: None,
             required_capabilities: vec!["fs:read".to_string(), "network".to_string()],
+            publisher: None,
+            publisher_key: None,
+            signature: None,
         };
 
         assert!(with_caps.enforce_filesystem_access(false).is_ok());

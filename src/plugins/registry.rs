@@ -344,7 +344,6 @@ pub fn install_plugin(
         description: description.to_string(),
         installed_at: Some(now),
         commands,
-        description: description.to_string(),
         publisher,
         publisher_key,
         verification_status,

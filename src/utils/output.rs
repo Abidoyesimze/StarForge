@@ -56,7 +56,7 @@ pub fn print_json<T: Serialize>(value: &T) -> Result<()> {
 }
 
 pub fn print_error_json(code: &str, message: &str) -> Result<()> {
-    let envelope = JsonEnvelope {
+    let envelope = JsonEnvelope::<serde_json::Value> {
         version: 1,
         ok: false,
         data: None,
@@ -116,7 +116,7 @@ mod tests {
         assert_eq!(parsed["version"], 1);
         assert_eq!(parsed["ok"], true);
         assert_eq!(parsed["data"]["name"], "wallet");
-        assert!(parsed["error"].is_null() || parsed["error"].is_missing());
+        assert!(parsed["error"].is_null() || parsed.get("error").is_none());
     }
 
     #[test]

@@ -1748,6 +1748,7 @@ telemetry_enabled = true
             created_at: String::new(),
             funded: false,
             rotation_history: Vec::new(),
+            kdf_options: None,
         });
         let findings = validate_config_integrity(&cfg);
         assert!(

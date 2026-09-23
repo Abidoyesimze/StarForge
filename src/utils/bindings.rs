@@ -83,20 +83,6 @@ pub fn generate_bindings(wasm_path: &Path, language: BindingLanguage) -> Result<
     }
 }
 
-fn read_spec_entries(wasm: &[u8]) -> Result<Vec<ScSpecEntry>> {
-pub fn generate_from_metadata(
-    metadata: &ContractMetadata,
-    language: BindingLanguage,
-) -> Result<String> {
-    match language {
-        BindingLanguage::Rust => Ok(generate_rust(metadata)),
-        BindingLanguage::TypeScript => Ok(generate_typescript(metadata)),
-        BindingLanguage::Python => Ok(generate_python(metadata)),
-        BindingLanguage::Go => Ok(generate_go(metadata)),
-    }
-}
-fn read_spec_entries(wasm: &[u8]) -> Result<Vec<ScSpecEntry>> {
-
 /// Generate a language binding from already-parsed contract metadata.
 ///
 /// This is the single dispatch point used both by [`generate_bindings`] (which

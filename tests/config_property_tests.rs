@@ -204,6 +204,7 @@ fn valid_config() -> impl Strategy<Value = Config> {
                         created_at: "2026-01-01T00:00:00Z".to_string(),
                         funded,
                         rotation_history,
+                        kdf_options: None,
                     });
                 }
 
@@ -254,6 +255,7 @@ fn overlay_for(base: &Config) -> impl Strategy<Value = ConfigOverlay> {
                     created_at: "2026-01-01T00:00:00Z".to_string(),
                     funded: false,
                     rotation_history: Vec::new(),
+                    kdf_options: None,
                 });
             }
             ConfigOverlay {
@@ -446,6 +448,7 @@ proptest! {
             created_at: "2026-01-01T00:00:00Z".to_string(),
             funded: false,
             rotation_history: Vec::new(),
+                    kdf_options: None,
         });
         prop_assert!(config::validate_config(&broken).is_err());
     }
@@ -477,6 +480,7 @@ proptest! {
             created_at: "2026-01-01T00:00:00Z".to_string(),
             funded: false,
             rotation_history: Vec::new(),
+                    kdf_options: None,
         });
         prop_assert!(config::validate_config(&broken).is_err());
     }
