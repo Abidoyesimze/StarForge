@@ -465,6 +465,11 @@ pub struct Config {
     pub version: String,
     pub network: String,
     pub telemetry_enabled: Option<bool>,
+    /// Strict end-to-end privacy mode: blocks telemetry export, AI cloud calls,
+    /// and marketplace/registry auto-update network traffic regardless of the
+    /// individual feature flags (see `crate::utils::privacy`).
+    #[serde(default)]
+    pub privacy_mode: Option<bool>,
     /// Optional per-install UUIDv4. Lazily created on first load.
     /// Stable identifier used for deterministic feature-flag bucketing.
     #[serde(default)]

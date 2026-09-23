@@ -19,6 +19,12 @@ pub fn telemetry_log_path() -> Result<PathBuf> {
 }
 
 pub fn is_telemetry_enabled() -> bool {
+    // Strict privacy mode force-disables telemetry regardless of what the
+    // config or environment say, so nothing is even written to disk.
+    if privacy::is_privacy_mode_enabled() {
+        return false;
+    }
+
     if let Ok(env_val) = std::env::var("STARFORGE_TELEMETRY") {
         let enabled = !matches!(
             env_val.trim().to_ascii_lowercase().as_str(),

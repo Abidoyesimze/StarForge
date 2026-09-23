@@ -309,6 +309,19 @@ fn show() -> Result<()> {
         "telemetry.enabled",
         &cfg.telemetry_enabled.unwrap_or(false).to_string(),
     );
+    p::kv(
+        "Privacy mode",
+        &if crate::utils::privacy::is_privacy_mode_enabled() {
+            "enabled (strict)"
+        } else {
+            "disabled"
+        }
+        .to_string(),
+    );
+    p::kv(
+        "privacy.mode",
+        &cfg.privacy_mode.unwrap_or(false).to_string(),
+    );
 
     println!();
     p::header("Wallet Encryption (Argon2id)");
@@ -336,13 +349,16 @@ fn set_value(key: &str, value: &str) -> Result<()> {
         "telemetry" | "telemetry.enabled" => {
             cfg.telemetry_enabled = Some(parse_bool(value)?);
         }
+        "privacy" | "privacy.mode" => {
+            cfg.privacy_mode = Some(parse_bool(value)?);
+        }
         "network" => {
             config::validate_network_exists(&cfg, value)?;
             cfg.network = value.to_string();
         }
         _ => {
             anyhow::bail!(
-                "Unsupported config key '{}'. Supported keys: telemetry.enabled, network",
+                "Unsupported config key '{}'. Supported keys: telemetry.enabled, privacy.mode, network",
                 key
             );
         }
@@ -478,8 +494,14 @@ fn set(key: &str, value: &str) -> Result<()> {
             p::success(&format!("'{}' set to '{}'.", key, enabled));
             Ok(())
         }
+        "privacy" | "privacy.mode" => {
+            cfg.privacy_mode = Some(enabled);
+            config::save(&cfg)?;
+            p::success(&format!("'{}' set to '{}'.", key, enabled));
+            Ok(())
+        }
         _ => anyhow::bail!(
-            "Unsupported config key '{}'. Supported keys: telemetry.enabled",
+            "Unsupported config key '{}'. Supported keys: telemetry.enabled, privacy.mode",
             key
         ),
     }

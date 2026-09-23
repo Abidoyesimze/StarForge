@@ -447,6 +447,37 @@ See [GOVERNANCE.md](GOVERNANCE.md) for the full workflow.
 | `lint <PATH>` | Static Soroban source lint |
 | `plugin install/list/run` | Dynamic plugin management |
 | `completions <SHELL>` | bash/zsh/fish/powershell completions |
+| `privacy mode on/off/status` | Enable, disable, or report strict end-to-end privacy mode |
+| `config set privacy.mode true/false` | Persist privacy mode in the configuration (`config set` equivalent) |
+
+### Strict privacy mode (`privacy mode`)
+
+*End-to-end privacy mode* guarantees that **no bytes leave the machine** for
+automatic network activity. It is the single kill-switch for outbound data.
+
+| Channel | Behavior when enabled |
+|---------|----------------------|
+| Telemetry (`telemetry.enabled`) | Force-disabled; no events are even written to disk |
+| AI cloud calls | Forced to offline mode; cloud-only AI commands fail clearly |
+| Marketplace / template registry auto-update | Uses the local cache or bundled registry; never fetches remotely |
+
+```bash
+starforge privacy mode on        # enable
+starforge privacy mode off       # disable
+starforge privacy mode status    # report effective status
+```
+
+Alternative ways to enable it:
+
+- `config set privacy.mode true` (persisted per-user).
+- `STARFORGE_PRIVACY_MODE=1` environment variable — overrides the config and is
+  ideal for CI runners and shared machines. Recognised values: `1/true/on/yes`,
+  `0/false/off/no`; unknown values fail closed (privacy on).
+
+Note that `privacy mode off` only flips the persisted config; a still-exported
+`STARFORGE_PRIVACY_MODE` environment variable keeps privacy enabled (env wins).
+
+---
 
 ### `monitor`
 
@@ -506,4 +537,5 @@ starforge my-plugin <args>
 - [SIMULATION_RESOURCES.md](SIMULATION_RESOURCES.md) — CPU, memory, footprint, and resource fees
 - [CORRELATION_IDS.md](CORRELATION_IDS.md) — correlating structured logs across an invocation
 - [CONFIGURATION.md](CONFIGURATION.md) — config parsing, overlays, and validation rules
+- [OFFLINE_AI.md](OFFLINE_AI.md) — offline/cloud AI modes and parity
 - [WALLET_IMPORT_SECURITY.md](WALLET_IMPORT_SECURITY.md) — limits on untrusted wallet backups
