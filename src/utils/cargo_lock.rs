@@ -197,7 +197,7 @@ pub fn verify_cargo_lock_reproducibility(
     };
 
     let mut violations = Vec::new();
-    let mut warnings = Vec::new();
+    let warnings = Vec::new();
     let mut resolution_error = None;
 
     let check_success = match output {

@@ -687,6 +687,12 @@ fn registry_path() -> Result<PathBuf> {
     Ok(dir.join("registry.json"))
 }
 
+/// Path of the ETag recorded for the cached registry, used for conditional
+/// refresh requests.
+fn registry_etag_path() -> Result<PathBuf> {
+    Ok(registry_path()?.with_extension("etag"))
+}
+
 /// Create a cache directory with owner-only permissions and reject symlinked
 /// directories. Cache contents influence generated projects and must not be
 /// redirected into an attacker-controlled location.
@@ -2502,9 +2508,6 @@ mod tests {
             documentation: None,
             categories: Vec::new(),
             featured: false,
-            changelog: None,
-            repository: None,
-            security_review: None,
         }
     }
 
@@ -2998,9 +3001,6 @@ mod tests {
             documentation: None,
             categories: Vec::new(),
             featured: false,
-            changelog: None,
-            repository: None,
-            security_review: None,
         });
 
         // Test name search
@@ -3055,9 +3055,6 @@ mod tests {
             documentation: None,
             categories: Vec::new(),
             featured: false,
-            changelog: None,
-            repository: None,
-            security_review: None,
         };
 
         let dest = tmp.path().join(&entry.name);
@@ -3114,9 +3111,6 @@ mod tests {
             documentation: None,
             categories: Vec::new(),
             featured: false,
-            changelog: None,
-            repository: None,
-            security_review: None,
         }
     }
 

@@ -351,8 +351,6 @@ fn list(json: bool) -> Result<()> {
                 trust: entry.trust.label().to_string(),
                 source: entry.source,
                 description: entry.description,
-                source: entry.source.clone(),
-                description: entry.description.clone(),
                 commands: entry
                     .commands
                     .into_iter()
@@ -380,15 +378,18 @@ fn list(json: bool) -> Result<()> {
     p::separator();
     let list_entries = registry::plugin_list_entries(&reg);
 
-    let list_entries = registry::plugin_list_entries(&reg);
-
     let plugin_rows: Vec<Vec<String>> = list_entries
         .iter()
         .map(|entry| {
             vec![
                 entry.name.clone(),
                 entry.plugin_version.clone(),
-                entry.trust.clone(),
+                entry.trust.label().to_string(),
+                reg.plugins
+                    .iter()
+                    .find(|p| p.name == entry.name)
+                    .map(|p| p.verification_status.label().to_string())
+                    .unwrap_or_default(),
                 entry.description.clone(),
             ]
         })
@@ -431,7 +432,7 @@ fn load() -> Result<()> {
         return Ok(());
     }
 
-    let _config = config::load().unwrap_or_default();
+    let config = config::load().unwrap_or_default();
 
     // Warn about any unknown-trust plugins before loading.
     for pl in reg.plugins.iter().filter(|p| {
@@ -797,7 +798,7 @@ fn verify(name: Option<String>, deep: bool, runtime_check: bool) -> Result<()> {
         None => reg.plugins.iter().collect(),
     };
 
-    let _config = config::load().unwrap_or_default();
+    let config = config::load().unwrap_or_default();
     let mut all_ok = true;
 
     for pl in &to_check {
@@ -830,11 +831,11 @@ fn verify(name: Option<String>, deep: bool, runtime_check: bool) -> Result<()> {
             .as_ref()
             .map(|r| r.status.clone())
             .unwrap_or(pl.verification_status.clone());
-        let ver_ok = match ver_status {
+        let ver_ok = matches!(
+            ver_status,
             crate::plugins::verifier::VerificationStatus::Verified
-            | crate::plugins::verifier::VerificationStatus::Unsigned => true,
-            _ => false,
-        };
+                | crate::plugins::verifier::VerificationStatus::Unsigned
+        );
 
         let status = if lib_exists && trust_ok && compat_ok && ver_ok {
             "✓ OK"

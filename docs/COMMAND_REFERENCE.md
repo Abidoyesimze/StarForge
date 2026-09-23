@@ -306,6 +306,19 @@ starforge advanced-perf profile ./target/wasm32-unknown-unknown/release/token.wa
 The artifact profiler reports estimated execution time, memory usage, bottlenecks,
 baseline regression detection, comparison deltas, and a dashboard summary.
 
+### `perf regression` — regression testing against tracked baselines
+
+| Subcommand | Purpose |
+|------------|---------|
+| `perf regression baseline --name <NAME> --input <JSON>` | Record or update a baseline; each version is appended to `<name>.history.jsonl` |
+| `perf regression baseline --run "<CMD>" --label <L>` | Time a command (`--iterations`, `--warmup`) and record `<L>.wall_time_ms` |
+| `perf regression check --baseline <NAME> --input <JSON>` | Compare measurements with a baseline; exits non-zero on regressions |
+| `perf regression history --name <NAME>` | Show how each metric's mean evolved across baseline versions |
+| `perf regression list` | List stored baselines |
+
+See [PERF_REGRESSION_TESTING.md](PERF_REGRESSION_TESTING.md) for the measurement
+format, thresholds, noise handling, and CI integration.
+
 ---
 
 ## `docs`
@@ -347,6 +360,12 @@ Set `STARFORGE_AI_API_KEY` (optional `STARFORGE_AI_BASE_URL`, `STARFORGE_AI_MODE
 | `audit --ci-workflow-out <FILE>` | Generate a GitHub Actions workflow for security audits |
 | `audit --track` | Create remediation tracker items for findings |
 | `remediation list` | Review tracked audit and pentest remediation items |
+| `best-practices analyze [PATH]` | Score a contract or project against the best-practices library (`--format text\|markdown\|json\|sarif`, `--fail-on`, `--min-score`, `--track`) |
+| `best-practices rules` | List rules with severities and OWASP/CWE references |
+| `best-practices status` | Show tracked findings, remediation status, and score trend |
+| `best-practices accept <ID> --reason <TEXT>` / `reopen <ID>` | Record accepted risk or reopen a finding |
+
+See [security/BEST_PRACTICES_ANALYZER.md](security/BEST_PRACTICES_ANALYZER.md).
 
 ```bash
 starforge security audit ./contracts/token/src/lib.rs --format html --out audit.html
@@ -435,8 +454,11 @@ Live monitoring of contracts or wallets, including Soroban event streaming, rout
 | `--websocket-url <URL>` | Override the derived WebSocket endpoint |
 | `--route <NAME=PATTERN>` | Route matching events into named lanes; repeatable |
 | `--alert <RULE>` | Alert rule in `pattern`, `severity:pattern`, or `severity:pattern:message` form |
+| `--alert-rate <RULE>` | Rate alert `[severity:]pattern:COUNT/LEDGERS[:message]`: fires when COUNT matching events land within LEDGERS ledgers, then stays quiet for one window; repeatable |
+| `--notify <SEVERITY>` | Forward alerts at or above this severity to notification channels configured with `contract-monitor notify add` |
 | `--persist [PATH]` | Persist matching events to JSONL, using the default StarForge event store path when PATH is omitted |
 | `--replay <PATH>` | Replay events from a JSONL event store instead of connecting live |
+| `--from-ledger <N>` / `--to-ledger <N>` | Limit a replay to an inclusive ledger range |
 | `--dashboard` | Render the event analytics dashboard |
 | `--trigger <PATTERN=COMMAND>` | Execute a shell command when a pattern matches; repeatable |
 | `--allow-triggers` | Required explicit opt-in before event triggers execute shell commands |
@@ -453,7 +475,28 @@ starforge monitor --contract CCPYZ... --transport websocket --dashboard
 starforge monitor --contract CCPYZ... --route swaps=swap --alert high:mint --persist
 starforge monitor --contract CCPYZ... --replay ~/.starforge/events/testnet-CCPYZ....jsonl --dashboard
 starforge monitor --contract CCPYZ... --trigger mint=./on-mint.sh --allow-triggers
+starforge monitor --contract CCPYZ... --follow \
+  --alert "critical:topic~admin & !topic~init:admin action" \
+  --alert-rate "high:topic~transfer:20/5:transfer burst" --notify high
+starforge monitor --contract CCPYZ... --replay events.jsonl \
+  --from-ledger 51200 --to-ledger 51900 --alert-rate "transfer:20/5" --dashboard
 ```
+
+Event patterns (used by `--route`, `--alert`, `--alert-rate`, and `--trigger`) are
+case-insensitive:
+
+| Pattern | Matches |
+|---------|---------|
+| `text` | Substring anywhere in the event type, ledger, ID, topics, or value |
+| `topic~swap`, `type~contract`, `value~xlm`, `id~0000` | Substring in one field |
+| `ledger>=100`, `ledger<200`, `ledger=150` | Ledger comparisons |
+| `!term` | Negation |
+| `a & b` | All terms must match |
+| `a \| b` | Any alternative matches (`&` binds tighter than `\|`) |
+
+Replays are processed in ledger order, so rate alerts behave the same live and on
+replay. The dashboard reports totals, the event rate (events per ledger), top
+topics, and counts by type, route, and alert severity.
 
 Event stores use JSON Lines. Replay skips malformed records and deduplicates events by
 network, contract ID, and Soroban event ID. Triggers inherit event metadata through

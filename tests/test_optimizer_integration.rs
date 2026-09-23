@@ -5,6 +5,7 @@
 //! failure pattern analysis, and report generation.
 
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use starforge::utils::test_generator::GeneratedTestCase;
 use starforge::utils::test_optimizer::*;
@@ -133,7 +134,6 @@ fn test_full_optimization_pipeline_with_history() {
         800.0,
         "fail",
     )]);
-    opt.history.extend([
     insert_history(
         &mut opt.history,
         make_history("test_security_auth", 20, 5, 15, 3, 300.0, "pass"),
@@ -469,7 +469,6 @@ fn test_report_generation_and_export() {
         .extend([make_history("test_a", 10, 2, 8, 1, 100.0, "pass")]);
     opt.history
         .extend([make_history("test_b", 5, 3, 2, 3, 500.0, "fail")]);
-    opt.history.extend([
     insert_history(
         &mut opt.history,
         make_history("test_a", 10, 2, 8, 1, 100.0, "pass"),
