@@ -5,6 +5,7 @@ use crate::plugins::interface::{
 };
 use crate::plugins::manifest;
 use crate::plugins::registry::{load_registry, TrustLevel};
+use crate::plugins::wasm::{SandboxedWasmPlugin, WasmSandboxPolicy};
 use anyhow::Result;
 use libloading::Library;
 use std::collections::HashMap;
@@ -167,6 +168,17 @@ impl PluginManager {
         }
     }
 
+    /// Load and execute a WebAssembly plugin under the default capability-free
+    /// policy. Native plugins remain a legacy compatibility path and must be
+    /// explicitly enabled with the `unsafe-native-plugins` feature.
+    pub fn load_wasm_plugin<P: AsRef<Path>>(
+        &self,
+        path: P,
+        policy: WasmSandboxPolicy,
+    ) -> Result<SandboxedWasmPlugin> {
+        SandboxedWasmPlugin::load(path, policy)
+    }
+
     /// # Safety
     /// The caller must ensure the plugin at `path` is a valid StarForge plugin
     /// compiled with a compatible Rust toolchain and ABI.
@@ -186,6 +198,16 @@ impl PluginManager {
     ) -> std::result::Result<(), PluginLoadError> {
         let path_ref = path.as_ref();
         let path_display = path_ref.to_string_lossy().to_string();
+
+        #[cfg(not(feature = "unsafe-native-plugins"))]
+        {
+            return Err(PluginLoadError::PermissionDenied {
+                path: path_display,
+                capabilities:
+                    "native plugin loading is disabled; enable the unsafe-native-plugins feature"
+                        .into(),
+            });
+        }
 
         // ── Pre-load manifest compatibility validation ───────────────────────
         // Inspect and validate manifest *before* opening binary with Library::new()
@@ -575,6 +597,9 @@ mod tests {
         match result {
             Err(PluginLoadError::InvalidLibrary { path, .. }) => {
                 assert!(path.contains("plugin.so"));
+            }
+            Err(PluginLoadError::PermissionDenied { capabilities, .. }) => {
+                assert!(capabilities.contains("unsafe-native-plugins"));
             }
             other => panic!("Expected InvalidLibrary, got {:?}", other),
         }
