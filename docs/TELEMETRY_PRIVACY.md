@@ -154,7 +154,7 @@ In future versions, StarForge may offer opt-in remote telemetry (sending anonymo
 
 If you have privacy concerns or questions about telemetry:
 
-1. **Review the code**: Full source available at https://github.com/Josetic224/StarForge
+1. **Review the code**: Full source available at https://github.com/Nanle-code/StarForge
 2. **Check the logs**: Inspect `~/.starforge/data/telemetry.log` to see what was collected
 3. **Disable it**: Use `starforge config set telemetry false` if you prefer not to participate
 4. **Report issues**: Open an issue on GitHub with any privacy concerns
@@ -164,4 +164,4 @@ If you have privacy concerns or questions about telemetry:
 - [PRIVACY_POLICY.md](./PRIVACY_POLICY.md) - Full privacy policy
 - [SECURITY_LOGGING_AUDIT.md](./SECURITY_LOGGING_AUDIT.md) - Security logging details
 - [docs/DATA_FLOW_INVENTORY.md](docs/DATA_FLOW_INVENTORY.md) - Full inventory of where secrets and PII can flow across the CLI (config, logs, telemetry, AI prompts, stdout/stderr), the controls in place, and known gaps
-- [GitHub Repository](https://github.com/Josetic224/StarForge) - Open source, fully auditable
+- [GitHub Repository](https://github.com/Nanle-code/StarForge) - Open source, fully auditable
