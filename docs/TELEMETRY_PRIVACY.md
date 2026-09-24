@@ -49,13 +49,13 @@ For each CLI command executed, StarForge collects:
 
 Enable telemetry explicitly using the `config` command:
 
-```bash
+```bash norun
 starforge config set telemetry true
 ```
 
 View your current telemetry setting:
 
-```bash
+```bash norun
 starforge config show
 # or
 starforge telemetry status
@@ -63,7 +63,7 @@ starforge telemetry status
 
 Disable telemetry again:
 
-```bash
+```bash norun
 starforge config set telemetry false
 ```
 
@@ -71,7 +71,7 @@ starforge config set telemetry false
 
 Enable telemetry for a single command or session:
 
-```bash
+```bash norun
 # Enable for a single command
 STARFORGE_TELEMETRY=1 starforge deploy --wasm my_contract.wasm
 
@@ -91,7 +91,7 @@ Accepted values to enable telemetry:
 
 For automated environments, set the environment variable explicitly:
 
-```bash
+```bash norun
 # In GitHub Actions
 env:
   STARFORGE_TELEMETRY: "1"
@@ -131,13 +131,13 @@ Telemetry logs are stored in:
 
 These files are created only if telemetry is enabled. You can inspect the exact payload with:
 
-```bash
+```bash norun
 starforge telemetry payload
 ```
 
 And fully wipe the local audit trail with:
 
-```bash
+```bash norun
 starforge telemetry reset
 ```
 
