@@ -419,15 +419,25 @@ git push origin feat/issue-XXX-description
 
 Then open a Pull Request on GitHub. Use the provided template and follow the checklist.
 
+### 8. Architectural Changes & ADRs
+
+If your PR introduces or alters major architectural patterns (such as client binding formats, plugin ABIs, telemetry defaults, simulation engines, or storage schemas), you must include an **Architecture Decision Record (ADR)**.
+- See the [ADR Index and Process](docs/adr/README.md).
+- Copy [`docs/adr/template.md`](docs/adr/template.md) and record the context, considered options, and decision outcomes.
+
 ---
 
-## Code Quality and Security Logging
+## Code Quality, Security, and Incident Response
 
 StarForge enforces consistent code quality through automated CI checks. See [CI_ENFORCEMENT.md](CI_ENFORCEMENT.md) for full details.
 
-### Security Logging Requirements
+### Security Logging and Incident Response Requirements
 
-All security-relevant operations must be properly logged for auditability and debugging. See [SECURITY_LOGGING_GUIDE.md](SECURITY_LOGGING_GUIDE.md) for detailed requirements. Key principles:
+All security-relevant operations must be properly logged for auditability and debugging:
+- See [SECURITY_LOGGING_GUIDE.md](SECURITY_LOGGING_GUIDE.md) for logging standards.
+- In the event of suspected secret key or credential leakage, immediately follow the [Incident Response Runbook](docs/SECURITY_INCIDENT_RUNBOOK.md).
+
+Key principles:
 
 - **Log all security operations** - Wallet creation, encryption, deployment, plugin loading, etc.
 - **Never log secrets** - Private keys, passphrases, encryption keys must be redacted
